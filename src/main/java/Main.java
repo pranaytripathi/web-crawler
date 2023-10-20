@@ -1,31 +1,40 @@
+import helper.CompletableFutureHelper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
+    private static List<String> visitedLinks = new ArrayList<>();
+
+    private static Map<String, List<String>> output = new HashMap<>();
+    public static void main(String[] args) throws IOException, URISyntaxException {
         String url  = "https://monzo.com";
-
-        List<String> links = getLinksForUrl(url);
-
-        links.forEach(x -> {
-            if (x.startsWith(url)) {
-                try {
-                    Document d1 = Jsoup.connect(x).get();
-                    System.out.println(d1.select("a").stream()
-                            .map(l -> l.attributes().get("href"))
-                            .filter(l -> l.startsWith("https://"))
-                            .toList());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+        URI uri = new URI(url);
+        processUrl(url, "https://"+ uri.getHost() );
+        output.keySet().stream().forEach(x -> {
+          System.out.println(x +"        "+ output.get(x));
         });
+    }
+
+    private static void processUrl(String url, String domain) throws IOException {
+      var links = getLinksForUrl(url);
+      output.putIfAbsent(url, links);
+      var linksOnSameDomain = links.stream().filter(x-> x.startsWith(domain) && !output.containsKey(x)).collect(Collectors.toList());
+      if (linksOnSameDomain.size() > 0) {
+         var futureToCrawlLinks = crawlLinks(linksOnSameDomain, domain);
+         CompletableFutureHelper.executeAllFutures(futureToCrawlLinks);
+      }
     }
 
     private static List<String> getLinksForUrl(final String url) throws IOException {
@@ -36,7 +45,16 @@ public class Main {
         return Executors.newFixedThreadPool(10);
     }
 
-    private CompletableFuture<?> crawlLinks(final List<String> links, String url) {
-        return null;
+    private static List<CompletableFuture<Void>> crawlLinks(List<String> links, String domain)  {
+       ExecutorService executors = getExecutors();
+       return links.stream().map(x ->
+               CompletableFuture.runAsync(() -> {
+                 try {
+                   processUrl(x, domain);
+                 } catch (IOException e) {
+                   System.out.println(e.getMessage());
+                 }
+               }, executors))
+               .collect(Collectors.toList());
     }
 }
