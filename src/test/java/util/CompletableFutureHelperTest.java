@@ -2,8 +2,6 @@ package util;
 
 
 
-import helper.CompletableFutureHelper;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -60,7 +58,6 @@ public class CompletableFutureHelperTest {
                 CompletableFuture.runAsync(() -> {
                 })
         );
-
         CompletableFutureHelper.executeAllFutures(successfulFutures);
     }
 }
