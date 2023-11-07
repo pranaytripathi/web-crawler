@@ -1,8 +1,8 @@
 package com.webcrawler.dao;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class WebCrawlerResponse {
     public Map<String, List<String>> getWebLinksCrawled() {
@@ -13,5 +13,5 @@ public class WebCrawlerResponse {
         webLinksCrawled.putIfAbsent(url, links);
     }
 
-    private final Map<String, List<String>> webLinksCrawled = new HashMap<>();
+    private final Map<String, List<String>> webLinksCrawled = new ConcurrentHashMap<>();
 }
